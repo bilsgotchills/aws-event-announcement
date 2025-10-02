@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📢 Event Announcements</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .event { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    img { margin-top: 10px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>📢 Event Announcements</h1>
+
+  <h2>Create New Event</h2>
+  <form id="eventForm">
+    <input type="text" id="eventName" placeholder="Event Name" required /><br /><br />
+    <input type="date" id="eventDate" required /><br /><br />
+    <textarea id="eventDescription" placeholder="Event Description" required></textarea><br /><br />
+    <input type="file" id="eventFile" /><br /><br />
+    <button type="submit">Create Event</button>
+  </form>
+
+  <h2>Upcoming Events</h2>
+  <div id="eventsList">Loading events...</div>
+
+  <script>
+    // ⚡ Replace with your real API endpoints
+    const CREATE_EVENT_API = "https://vmar23jx4c.execute-api.us-east-1.amazonaws.com/createEvent";
+    const LIST_EVENTS_API = "https://vmar23jx4c.execute-api.us-east-1.amazonaws.com/listEvents";
+
+    document.getElementById("eventForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const eventName = document.getElementById("eventName").value;
+      const eventDate = document.getElementById("eventDate").value;
+      const eventDescription = document.getElementById("eventDescription").value;
+      const fileInput = document.getElementById("eventFile");
+
+      let fileContent = null, fileName = null;
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileName = file.name;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        await new Promise(resolve => reader.onload = () => resolve());
+        fileContent = reader.result.split(",")[1]; // base64
+      }
+
+      try {
+        const res = await fetch(CREATE_EVENT_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventName, eventDate, eventDescription, fileContent, fileName })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ " + data.message);
+          document.getElementById("eventForm").reset(); // clear form
+          fetchEvents(); // ✅ reload events list immediately
+        } else {
+          alert("❌ Error creating event: " + data.error);
+        }
+      } catch (err) {
+        console.error("Error creating event:", err);
+        alert("❌ Error creating event: " + err.message);
+      }
+    });
+
+    async function fetchEvents() {
+      const container = document.getElementById("eventsList");
+      container.innerHTML = "<p>⏳ Loading events...</p>"; // show loading state
+
+      try {
+        const res = await fetch(LIST_EVENTS_API);
+        const events = await res.json();
+
+        console.log("Events response:", events);
+
+        container.innerHTML = "";
+
+        if (!Array.isArray(events)) {
+          container.innerHTML = "<p>⚠️ Failed to load events. Check logs.</p>";
+          return;
+        }
+
+        if (events.length === 0) {
+          container.innerHTML = "<p>No events found.</p>";
+          return;
+        }
+
+        // ✅ Show newest first
+        events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        events.forEach(ev => {
+          const div = document.createElement("div");
+          div.className = "event";
+          div.innerHTML = `
+            <h3>${ev.name}</h3>
+            <p><b>Date:</b> ${ev.date}</p>
+            <p>${ev.description}</p>
+            ${ev.fileUrl ? `<img src="${ev.fileUrl}" width="200" />` : ""}
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        container.innerHTML = "<p>⚠️ Could not fetch events.</p>";
+      }
+    }
+
+    // Load events on page load
+    fetchEvents();
+  </script>
+</body>
+</html>
