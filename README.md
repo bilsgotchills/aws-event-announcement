@@ -12,8 +12,9 @@ A simple *serverless application* built using AWS services: *API gateway, Lambda
 ---
 
 ## 📖 Full Project Guide
-👉 I have explained this project step by step with screenshots on my blog:  
-[Read the detailed guide here](your-blog-link)  
+👉 I have explained this project step by step with screenshots on my blog: 
+https://multi-tier-aws-project.blogspot.com/2025/10/aws-event-announcement-project.html
+
 
 ---
 
